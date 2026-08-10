@@ -1,0 +1,3 @@
+const { Pool } = require('pg'); const config = require('./config'); const pool = new Pool({ connectionString: config.NOTIFICATION_DATABASE_URL, max: 20 });
+async function migrate() { await pool.query(`CREATE TABLE IF NOT EXISTS processed_events (event_id UUID PRIMARY KEY, processed_at TIMESTAMPTZ NOT NULL DEFAULT now()); CREATE TABLE IF NOT EXISTS notifications (id UUID PRIMARY KEY, event_id UUID UNIQUE NOT NULL, user_id UUID NOT NULL, recipient TEXT NOT NULL, type TEXT NOT NULL, status TEXT NOT NULL, body JSONB NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT now());`); }
+module.exports = { pool, migrate };
