@@ -1,0 +1,62 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
+      POSTGRES_DB: users
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infra/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+
+  nats:
+    image: nats:2.10-alpine
+    command: ["-js", "-sd", "/data", "-m", "8222", "--user", "app", "--pass", "${NATS_PASSWORD:-change-me}"]
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://localhost:8222/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+    volumes:
+      - nats_data:/data
+
+  user-service:
+    build: .
+    command: npm run start -w @assignment/user-service
+    env_file: .env
+    environment:
+      USER_SERVICE_PORT: 3001
+    depends_on:
+      postgres: { condition: service_healthy }
+      nats: { condition: service_healthy }
+
+  notification-service:
+    build: .
+    command: npm run start -w @assignment/notification-service
+    env_file: .env
+    depends_on:
+      postgres: { condition: service_healthy }
+      nats: { condition: service_healthy }
+
+  api-gateway:
+    build: .
+    command: npm run start -w @assignment/api-gateway
+    env_file: .env
+    environment:
+      GATEWAY_PORT: 3000
+    depends_on:
+      user-service: { condition: service_started }
+    ports:
+      - "3000:3000"
+
+volumes:
+  postgres_data:
+  nats_data:

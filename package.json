@@ -1,0 +1,12 @@
+{
+  "name": "user-notification-platform",
+  "private": true,
+  "version": "1.0.0",
+  "workspaces": ["services/*"],
+  "scripts": {
+    "dev:user": "npm run dev -w @assignment/user-service",
+    "dev:notification": "npm run dev -w @assignment/notification-service",
+    "dev:gateway": "npm run dev -w @assignment/api-gateway",
+    "test": "npm run test --workspaces --if-present"
+  }
+}
